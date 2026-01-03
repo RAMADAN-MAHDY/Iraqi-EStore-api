@@ -1,18 +1,27 @@
-# واجهة برمجة تطبيقات التجارة الإلكترونية - دليل جلب الفئات
+# واجهة برمجة تطبيقات التجارة الإلكترونية - دليل جلب الفئات وتفاعل مع المصادقة
+### https://iraqi-e-store-api.vercel.app
+## مقدمة
+يشرح هذا الدليل كيفية جلب بيانات الفئات وكيفية تفاعل واجهة الأمامية مع نظام المصادقة في الخلفية، مع الإشارة إلى الملفات ذات الصلة:
+- <mcfile name="authController.js" path="d:\new valume 1 D\my project\projects with dina abaza\e-comm\controllers\authController.js"></mcfile> (دوال المصادقة)
+- <mcfile name="authRoutes.js" path="d:\new valume 1 D\my project\projects with dina abaza\e-comm\routes\authRoutes.js"></mcfile> (مسارات المصادقة)
+- <mcfolder name="middleware" path="d:\new valume 1 D\my project\projects with dina abaza\e-comm\middleware"></mcfolder> (وحدات التأمين)
+- <mcfile name="server.js" path="d:\new valume 1 D\my project\projects with dina abaza\e-comm\server.js"></mcfile> (إعدادات CORS والخادم)
 
-يشرح هذا الدليل كيفية جلب بيانات الفئات من واجهة برمجة تطبيقات التجارة الإلكترونية. نقطة نهاية API للفئات هي `/api/categories`.
+## قسم 1: جلب بيانات الفئات
 
-## نقطة نهاية API
+يشرح هذا القسم كيفية جلب بيانات الفئات من واجهة برمجة تطبيقات التجارة الإلكترونية. نقطة نهاية API للفئات هي `/api/categories`.
+
+### نقطة نهاية API
 
 `GET /api/categories`
 
 تقوم نقطة النهاية هذه بجلب جميع الفئات. لا تتطلب مصادقة للوصول العام.
 
-## أمثلة
+### أمثلة جلب الفئات
 
 فيما يلي أمثلة لكيفية جلب الفئات باستخدام طرق مختلفة:
 
-### 1. استخدام `fetch` (واجهة برمجة تطبيقات المتصفح الأصلية)
+#### 1. استخدام `fetch` (واجهة برمجة تطبيقات المتصفح الأصلية)
 
 ```javascript
 // جلب جميع الفئات
@@ -47,7 +56,7 @@ fetch('http://localhost:5000/api/categories/someCategoryId')
   });
 ```
 
-### 2. استخدام `axios` (مكتبة عميل HTTP شائعة)
+#### 2. استخدام `axios` (مكتبة عميل HTTP شائعة)
 
 أولاً، تأكد من تثبيت `axios`:
 `npm install axios` أو `yarn add axios`
@@ -73,7 +82,109 @@ axios.get('http://localhost:5000/api/categories/someCategoryId')
   .catch(error => {
     console.error('خطأ أثناء جلب الفئة حسب المعرف باستخدام axios:', error);
   });
+
+## قسم 2: تفاعل واجهة الأمامية مع نظام المصادقة
+
+### 1. إنشاء حساب مستخدم (من خلال <mcfile name="authController.js" path="d:\new valume 1 D\my project\projects with dina abaza\e-comm\controllers\authController.js"></mcfile>)
+مسار الخلفية: `POST /api/auth/register`
+
+#### مثال واجهة الأمامية (axios)
+```javascript
+import axios from 'axios';
+
+const registerUser = async (userData) => {
+  try {
+    const response = await axios.post('http://localhost:5000/api/auth/register', userData, {
+      withCredentials: true // لدعم الكوكيز (من <mcfile name="server.js" path="d:\new valume 1 D\my project\projects with dina abaza\e-comm\server.js"></mcfile>)
+    });
+    console.log('تم إنشاء الحساب:', response.data);
+  } catch (error) {
+    console.error('خطأ إنشاء الحساب:', error.response.data);
+  }
+};
+
+// استدعاء الدالة
+registerUser({ username: 'مثال', email: 'مثال@بريد.com', password: '123456' });
+```
+
+### 2. تسجيل الدخول (وضع الويب والموبايل)
+- وصف الخلفية: من خلال `loginUser` في <mcfile name="authController.js" path="d:\new valume 1 D\my project\projects with dina abaza\e-comm\controllers\authController.js"></mcfile>
+- مسار الخلفية: `POST /api/auth/login`
+
+#### مثال واجهة الأمامية (وضع الويب - كوكيز)
+```javascript
+// من خلال fetch
+fetch('http://localhost:5000/api/auth/login', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ email: 'مثال@بريد.com', password: '123456', client: 'web' }),
+  credentials: 'include' // لدعم الكوكيز (من <mcfolder name="middleware" path="d:\new valume 1 D\my project\projects with dina abaza\e-comm\middleware"></mcfolder>)
+})
+.then(response => response.json())
+.then(data => console.log('تم تسجيل الدخول:', data))
+.catch(error => console.error('خطأ تسجيل الدخول:', error));
+```
+
+#### مثال واجهة الأمامية (وضع الموبايل - رموز مميزة)
+```javascript
+import axios from 'axios';
+
+const loginMobile = async (userData) => {
+  try {
+    const response = await axios.post('http://localhost:5000/api/auth/login', {
+      ...userData,
+      client: 'mobile'
+    });
+    // حفظ الرموز مميزة في تخزين الموبايل
+    localStorage.setItem('accessToken', response.data.tokens.accessToken);
+    localStorage.setItem('refreshToken', response.data.tokens.refreshToken);
+  } catch (error) {
+    console.error('خطأ تسجيل الدخول:', error.response.data);
+  }
+};
+```
+
+### 3. تحديث الرمز المميز (refresh token)
+- وصف الخلفية: من خلال `refreshAccessToken` في <mcfile name="authController.js" path="d:\new valume 1 D\my project\projects with dina abaza\e-comm\controllers\authController.js"></mcfile>
+- مسار الخلفية: `POST /api/auth/refresh-token`
+
+#### مثال واجهة الأمامية
+```javascript
+const refreshToken = async () => {
+  try {
+    const response = await fetch('http://localhost:5000/api/auth/refresh-token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ client: 'web' }),
+      credentials: 'include'
+    });
+    console.log('تم تحديث الرمز المميز:', response.data);
+  } catch (error) {
+    console.error('خطأ تحديث الرمز المميز:', error);
+  }
+};
+```
+
+### 4. تسجيل الدخول كمسؤول (admin)
+- وصف الخلفية: من خلال `logiadmin` في <mcfile name="authController.js" path="d:\new valume 1 D\my project\projects with dina abaza\e-comm\controllers\authController.js"></mcfile> و <mcsymbol name="adminAuthMiddleware" filename="adminAuthMiddleware.js" path="d:\new valume 1 D\my project\projects with dina abaza\e-comm\middleware\adminAuthMiddleware.js" startline="1" type="function"></mcsymbol>
+- مسار الخلفية: `POST /api/auth/loginadmin`
+
+#### مثال واجهة الأمامية
+```javascript
+const loginAdmin = async (adminData) => {
+  try {
+    const response = await axios.post('http://localhost:5000/api/auth/loginadmin', adminData, {
+      withCredentials: true
+    });
+    console.log('تم تسجيل الدخول كمسؤول:', response.data);
+  } catch (error) {
+    console.error('خطأ تسجيل الدخول كمسؤول:', error.response.data);
+  }
+};
 ```
 
 
-تذكر استبدال `http://localhost:5000` بعنوان URL الأساسي لواجهة برمجة التطبيقات الفعلية إذا كان مختلفًا في بيئة النشر الخاصة بك.
+## ملاحظات هامة
+- استبدل `http://localhost:5000` بعنوان URL الأساسي لواجهة برمجة التطبيقات الفعلية إذا كان مختلفًا في بيئة النشر الخاصة بك.
+
+

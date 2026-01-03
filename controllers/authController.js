@@ -1,7 +1,7 @@
 import asyncHandler from 'express-async-handler';
 import bcrypt from 'bcryptjs';
 import User from '../models/User.js';
-import { generateToken, generateRefreshToken } from '../utils/jwt.js';
+import { generateToken, generateRefreshToken, verifyToken, verifyRefreshToken } from '../utils/jwt.js';
 import { OAuth2Client } from 'google-auth-library';
 
 
