@@ -1,17 +1,11 @@
-# واجهة برمجة تطبيقات التجارة الإلكترونية - دليل جلب الفئات وتفاعل مع المصادقة
-### https://iraqi-e-store-api.vercel.app
-## مقدمة
-يشرح هذا الدليل كيفية جلب بيانات الفئات وكيفية تفاعل واجهة الأمامية مع نظام المصادقة في الخلفية، مع الإشارة إلى الملفات ذات الصلة:
-- <mcfile name="authController.js" path="d:\new valume 1 D\my project\projects with dina abaza\e-comm\controllers\authController.js"></mcfile> (دوال المصادقة)
-- <mcfile name="authRoutes.js" path="d:\new valume 1 D\my project\projects with dina abaza\e-comm\routes\authRoutes.js"></mcfile> (مسارات المصادقة)
-- <mcfolder name="middleware" path="d:\new valume 1 D\my project\projects with dina abaza\e-comm\middleware"></mcfolder> (وحدات التأمين)
-- <mcfile name="server.js" path="d:\new valume 1 D\my project\projects with dina abaza\e-comm\server.js"></mcfile> (إعدادات CORS والخادم)
+# واجهة برمجة تطبيقات التجارة الإلكترونية - دليل جلب الفئات
 
-## قسم 1: جلب بيانات الفئات
+###  https://iraqi-e-store-api.vercel.app/
 
-يشرح هذا القسم كيفية جلب بيانات الفئات من واجهة برمجة تطبيقات التجارة الإلكترونية. نقطة نهاية API للفئات هي `/api/categories`.
+يشرح هذا الدليل كيفية جلب بيانات الفئات من واجهة برمجة تطبيقات التجارة الإلكترونية. نقطة نهاية API للفئات هي `/api/categories`.
 
-### نقطة نهاية API
+## نقطة نهاية API
+
 
 `GET /api/categories`
 
