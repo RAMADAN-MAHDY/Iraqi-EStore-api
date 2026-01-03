@@ -75,55 +75,5 @@ axios.get('http://localhost:5000/api/categories/someCategoryId')
   });
 ```
 
-### 3. استخدام React (مع خطافات `useEffect` و `useState`)
-
-يوضح هذا المثال جلب الفئات داخل مكون React.
-
-```javascript
-import React, { useState, useEffect } from 'react';
-import axios from 'axios'; // بافتراض أن axios مثبت
-
-function CategoryList() {
-  const [categories, setCategories] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-
-  useEffect(() => {
-    const fetchCategories = async () => {
-      try {
-        const response = await axios.get('http://localhost:5000/api/categories');
-        setCategories(response.data);
-      } catch (err) {
-        setError(err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchCategories();
-  }, []);
-
-  if (loading) {
-    return <div>جاري تحميل الفئات...</div>;
-  }
-
-  if (error) {
-    return <div>خطأ: {error.message}</div>;
-  }
-
-  return (
-    <div>
-      <h1>الفئات</h1>
-      <ul>
-        {categories.map(category => (
-          <li key={category._id}>{category.name}</li>
-        ))}
-      </ul>
-    </div>
-  );
-}
-
-export default CategoryList;
-```
 
 تذكر استبدال `http://localhost:5000` بعنوان URL الأساسي لواجهة برمجة التطبيقات الفعلية إذا كان مختلفًا في بيئة النشر الخاصة بك.
