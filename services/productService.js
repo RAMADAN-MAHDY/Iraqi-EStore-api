@@ -121,7 +121,7 @@ export const deleteProduct = async (id) => {
 };
 
 export const getOfferProducts = async (page = 1, limit = 10) => {
-  const query = { discountActive: true, discountPrice: { $lt: '$price' } };
+  const query = { discountActive: true, $expr: { $lt: ['$discountPrice', '$price'] } };
   const products = await Product.find(query)
     .populate('category', 'name')
     .limit(limit * 1)
