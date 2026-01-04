@@ -6,7 +6,7 @@ import { adminAuthMiddleware as authorize } from '../middleware/adminAuthMiddlew
 const router = express.Router();
 
 router.route('/')
-  .post(protect, authorize, create)
+  .post(protect,authorize, create)
   .get(getAll);
 
 router.route('/:id')

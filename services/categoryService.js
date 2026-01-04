@@ -14,11 +14,10 @@ export const getCategoryById = async (id) => {
   return await Category.findById(id);
 };
 
-export const updateCategory = async (id, name, description) => {
+export const updateCategory = async (id, name) => {
   const category = await Category.findById(id);
   if (category) {
     category.name = name || category.name;
-    category.description = description || category.description;
     await category.save();
     return category;
   } else {

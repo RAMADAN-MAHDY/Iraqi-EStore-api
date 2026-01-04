@@ -11,6 +11,20 @@ const ProductSchema = new mongoose.Schema({
     required: true,
     min: 0
   },
+  discountPrice: {
+    type: Number,
+    min: 0
+  },
+  discountPercent: {
+    type: Number,
+    min: 0,
+    max: 100
+  },
+  discountActive: {
+    type: Boolean,
+    default: false,
+    index: true
+  },
   category: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Category',
@@ -19,7 +33,6 @@ const ProductSchema = new mongoose.Schema({
   },
   stock: {
     type: Number,
-    required: true,
     min: 0
   },
   image: {
@@ -29,5 +42,7 @@ const ProductSchema = new mongoose.Schema({
 }, {
   timestamps: true
 });
+
+
 
 export default mongoose.model('Product', ProductSchema);

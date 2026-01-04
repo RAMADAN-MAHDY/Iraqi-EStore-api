@@ -1,14 +1,30 @@
 import asyncHandler from 'express-async-handler';
-import { createProduct, getProducts, getProductById, updateProduct, deleteProduct } from '../services/productService.js';
-
+import { createProduct, getProducts, getProductById, updateProduct, deleteProduct, getOfferProducts } from '../services/productService.js';
+import  uploadToImgBB  from '../utils/uploadToImgBB.js';
 // @desc    Create a new product
 // @route   POST /api/products
 // @access  Private/Admin
 export const create = asyncHandler(async (req, res) => {
-  const { name, price, category, stock, image } = req.body;
+  const { name, price, discountedPrice, discountActive, category, stock, description, brand } = req.body;
+
+  if (!req.file) {
+    return res.status(400).json({
+      error: "Missing Asset (ملف مرفق مفقود)",
+      message: "Product image is required (صورة المنتج مطلوبة)"
+    });
+  }
+
+  if (!name || !price || !category) {
+    return res.status(422).json({
+      error: "Validation Failure (فشل التحقق)",
+      message: "name, price, category are mandatory (الاسم، السعر، الفئة مطلوبة)"
+    });
+  }
+
+  const img = await uploadToImgBB(req.file.buffer);
 
   try {
-    const product = await createProduct(name, price, category, stock, image);
+    const product = await createProduct(name, price, discountedPrice, discountActive, category, stock, img.url);
     res.status(201).json(product);
   } catch (error) {
     res.status(400).json({ message: error.message });
@@ -49,15 +65,32 @@ export const getById = asyncHandler(async (req, res) => {
 // @route   PUT /api/products/:id
 // @access  Private/Admin
 export const update = asyncHandler(async (req, res) => {
-  const { name, price, category, stock, image } = req.body;
-
-  try {
-    const product = await updateProduct(req.params.id, name, price, category, stock, image);
-    res.json(product);
-  } catch (error) {
-    res.status(400).json({ message: error.message });
-  }
-});
+    const { id } = req.params;
+  
+    // جمع البيانات من req.body
+    const updates = {
+      ...req.body,
+      price: req.body.price ? parseFloat(req.body.price) : undefined,
+      discountActive: req.body.discountActive === "true",
+      discountPrice: req.body.discountPrice ? parseFloat(req.body.discountPrice) : undefined,
+      stock: req.body.stock ? parseInt(req.body.stock) : undefined,
+    };
+  
+    // رفع الصورة لو موجودة
+    if (req.file) {
+      const img = await uploadToImgBB(req.file.buffer);
+      updates.image = img.url;
+    }
+  
+    const product = await updateProduct(id, updates);
+  
+    res.json({
+      status: "Updated (تم التحديث)",
+      data: product
+    });
+  });
+  
+  
 
 // @desc    Delete a product
 // @route   DELETE /api/products/:id
@@ -68,5 +101,18 @@ export const remove = asyncHandler(async (req, res) => {
     res.json(result);
   } catch (error) {
     res.status(400).json({ message: error.message });
+  }
+});
+
+// @desc    Get products on offer
+// @route   GET /api/products/offers
+// @access  Public
+export const getOffers = asyncHandler(async (req, res) => {
+  const { page = 1, limit = 10 } = req.query;
+  try {
+    const products = await getOfferProducts(page, limit);
+    res.json(products);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
   }
 });

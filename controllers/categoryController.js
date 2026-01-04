@@ -47,10 +47,10 @@ export const getById = asyncHandler(async (req, res) => {
 // @route   PUT /api/categories/:id
 // @access  Private/Admin
 export const update = asyncHandler(async (req, res) => {
-  const { name, description } = req.body;
+  const { name } = req.body;
 
   try {
-    const category = await updateCategory(req.params.id, name, description);
+    const category = await updateCategory(req.params.id, name);
     res.json(category);
   } catch (error) {
     res.status(400).json({ message: error.message });
