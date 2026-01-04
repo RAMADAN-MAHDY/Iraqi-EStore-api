@@ -121,6 +121,7 @@ export const registerUser = async (req, res)=> {
 
 // Get user profile
 export const getMe = asyncHandler(async (req, res) => {
+    console.log("getMe called: " + req.user.id);
   const user = await User.findById(req.user.id).select('-password');
   res.status(200).json(user);
 });

@@ -18,7 +18,7 @@ export const addItemToCart = async (userId, productId, qty) => {
     throw new Error('Product not found');
   }
 
-  const itemIndex = cart.items.findIndex(item => item.productId.toString() === productId);
+  const itemIndex = cart.items.findIndex(item => item.productId._id.toString() === productId);
 
   if (itemIndex > -1) {
     // Product exists in cart, update quantity
@@ -33,9 +33,11 @@ export const addItemToCart = async (userId, productId, qty) => {
 };
 
 export const updateCartItemQuantity = async (userId, productId, qty) => {
+    // console.log("updateCartItemQuantity" + userId + productId + qty);
   const cart = await getCartByUserId(userId);
-  const itemIndex = cart.items.findIndex(item => item.productId.toString() === productId);
-
+//   console.log(cart);
+  const itemIndex = cart.items.findIndex(item => item.productId._id.toString() === productId);
+// console.log(itemIndex);
   if (itemIndex > -1) {
     cart.items[itemIndex].qty = qty;
     if (cart.items[itemIndex].qty <= 0) {
@@ -50,7 +52,7 @@ export const updateCartItemQuantity = async (userId, productId, qty) => {
 
 export const removeItemFromCart = async (userId, productId) => {
   const cart = await getCartByUserId(userId);
-  cart.items = cart.items.filter(item => item.productId.toString() !== productId);
+  cart.items = cart.items.filter(item => item.productId._id.toString() !== productId);
   await cart.save();
   return cart;
 };
