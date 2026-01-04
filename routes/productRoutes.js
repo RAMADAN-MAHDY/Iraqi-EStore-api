@@ -17,7 +17,7 @@ router.route('/offers')
 
 router.route('/:id')
   .get(getById)
-  .put(protect, authorize, update)
+  .put(protect, authorize, uploadImage.single('image'), update)
   .delete(protect, authorize, remove);
 
 export default router;

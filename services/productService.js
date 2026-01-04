@@ -51,44 +51,46 @@ export const getProductById = async (id) => {
 };
 
 export const updateProduct = async (id, updates) => {
+    // جلب المنتج الأصلي
     const product = await Product.findById(id);
-  
     if (!product) {
       const error = new Error("Product not found (المنتج غير موجود)");
       error.statusCode = 404;
       throw error;
     }
   
-    // حذف أي undefined عشان MongoDB
+    // حذف أي قيمة undefined لتجنب مسح بيانات MongoDB بالخطأ
     Object.keys(updates).forEach(
       key => updates[key] === undefined && delete updates[key]
     );
   
-    // حساب الخصم
+    // حساب الخصم بشكل ديناميكي
     if (
       updates.price !== undefined ||
       updates.discountPrice !== undefined ||
       updates.discountActive !== undefined
     ) {
-      // Validate discount conditions if discountActive is true
-      if (updates.discountActive === true && updates.discountPrice !== undefined && updates.discountPrice >= (updates.price ?? product.price)) {
-        console.warn('Warning: discountActive is true but discountedPrice is not less than the product price. This will set discountPercent to 0.');
-      }
       const price = updates.price ?? product.price;
       const discountedPrice = updates.discountPrice ?? product.discountPrice ?? price;
       const discountActive = updates.discountActive ?? product.discountActive ?? false;
   
+      if (discountActive && discountedPrice >= price) {
+        console.warn(
+          'Warning: discountActive is true but discountPrice is not less than price. Discount will be ignored.'
+        );
+      }
+  
+      // حساب نسبة الخصم
       updates.discountPercent = (discountActive && discountedPrice < price)
         ? parseFloat(((price - discountedPrice) / price * 100).toFixed(2))
         : 0;
   
+      // ضبط الخصم والسعر بعد التحقق
       updates.discountPrice = (discountActive && discountedPrice < price) ? discountedPrice : price;
       updates.discountActive = discountActive && discountedPrice < price;
     }
-
-
   
-    // تحديث بشكل Atomic
+    // تحديث المنتج بشكل Atomic وآمن
     const updatedProduct = await Product.findByIdAndUpdate(
       id,
       { $set: updates },
@@ -107,7 +109,7 @@ export const updateProduct = async (id, updates) => {
       product: updatedProduct
     };
   };
-
+  
 export const deleteProduct = async (id) => {
   const product = await Product.findById(id);
   if (product) {

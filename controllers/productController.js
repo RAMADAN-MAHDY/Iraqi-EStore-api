@@ -64,17 +64,27 @@ export const getById = asyncHandler(async (req, res) => {
 // @desc    Update a product
 // @route   PUT /api/products/:id
 // @access  Private/Admin
+
+const parseFormData = (body) => {
+    const updates = {};
+  
+    if (body.name) updates.name = body.name;
+    if (body.price !== undefined && body.price !== "") updates.price = parseFloat(body.price);
+    if (body.discountPrice !== undefined && body.discountPrice !== "") updates.discountPrice = parseFloat(body.discountPrice);
+    if (body.stock !== undefined && body.stock !== "") updates.stock = parseInt(body.stock);
+    if (body.discountActive === "true") updates.discountActive = true;
+    if (body.discountActive === "false") updates.discountActive = false;
+    if (body.category) updates.category = body.category;
+    if (body.description) updates.description = body.description;
+    if (body.brand) updates.brand = body.brand;
+  
+    return updates;
+  };
+  
 export const update = asyncHandler(async (req, res) => {
     const { id } = req.params;
   
-    // جمع البيانات من req.body
-    const updates = {
-      ...req.body,
-      price: req.body.price ? parseFloat(req.body.price) : undefined,
-      discountActive: req.body.discountActive === "true",
-      discountPrice: req.body.discountPrice ? parseFloat(req.body.discountPrice) : undefined,
-      stock: req.body.stock ? parseInt(req.body.stock) : undefined,
-    };
+    let updates = parseFormData(req.body);
   
     // رفع الصورة لو موجودة
     if (req.file) {
@@ -82,6 +92,7 @@ export const update = asyncHandler(async (req, res) => {
       updates.image = img.url;
     }
   
+    // تحديث المنتج
     const product = await updateProduct(id, updates);
   
     res.json({
