@@ -1,4 +1,6 @@
 import { Resend } from 'resend';
+import dotenv from 'dotenv';
+dotenv.config(); // Load environment variables from .env.int
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
