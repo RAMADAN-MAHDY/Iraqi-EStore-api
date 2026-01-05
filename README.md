@@ -155,7 +155,42 @@ const verifyToken = async () => {
   }
 }   
 ```
+          
+مسار `/api/auth/me` يستخدم لجلب معلومات المستخدم الحالي بعد تسجيل الدخول. يتطلب هذا المسار مصادقة، مما يعني أنه يجب أن يكون المستخدم قد قام بتسجيل الدخول ولديه رمز وصول (access token) صالح.
 
+في هذا المشروع، يتم حماية هذا المسار بواسطة `authMiddleware` (المشار إليه بـ `protect` في <mcfile name="authRoutes.js" path="d:\new valume 1 D\my project\projects with dina abaza\e-comm\routes\authRoutes.js"></mcfile>)، والذي يتحقق من صحة رمز الوصول الخاص بالمستخدم.
+
+**مثال باستخدام Axios:**
+
+لجلب معلومات المستخدم الحالي باستخدام `axios`، ستحتاج إلى التأكد من أن رمز الوصول الخاص بك يتم إرساله مع الطلب. إذا كنت تستخدم الكوكيز للمصادقة (كما هو الحال في إعدادات الويب لهذا المشروع)، فسيتم إرسالها تلقائيًا إذا قمت بتعيين `withCredentials: true`.
+
+```javascript
+import axios from 'axios';
+
+const getMe = async () => {
+  try {
+    const response = await axios.get('http://localhost:5000/api/auth/me', {
+      withCredentials: true // مهم لإرسال الكوكيز (رموز المصادقة)
+    });
+    console.log('معلومات المستخدم:', response.data);
+    return response.data;
+  } catch (error) {
+    console.error('خطأ أثناء جلب معلومات المستخدم:', error.response ? error.response.data : error.message);
+    return null;
+  }
+};
+
+// استدعاء الدالة لجلب معلومات المستخدم
+getMe();
+```
+
+**شرح:**
+
+1.  **`axios.get('http://localhost:5000/api/auth/me', ...)`**: هذا هو الطلب الذي يتم إرساله إلى نقطة النهاية `/api/auth/me`.
+2.  **`withCredentials: true`**: هذا الخيار ضروري لـ `axios` لإرسال الكوكيز (التي تحتوي على رمز الوصول) مع الطلب. بدونها، لن يتمكن الخادم من التعرف على المستخدم، وسيعيد خطأ مصادقة.
+
+عند نجاح الطلب، ستتلقى بيانات المستخدم في `response.data`.
+        
 
 
 ### 4. تحديث الرمز المميز (refresh token)
