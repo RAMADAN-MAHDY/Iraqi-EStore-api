@@ -7,9 +7,7 @@ import { OAuth2Client } from 'google-auth-library';
 
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
-
 // POST /auth/google
-
 export const googleAuth = async (req, res)=> {
     try {
         const { token } = req.body;
@@ -39,28 +37,46 @@ export const googleAuth = async (req, res)=> {
             res.status(400).json({ error: "Email not found in Google token" });
             return;
         }
-
         // شيك هل المستخدم موجود
         let user = await User.findOne({ email });
-
         if (!user) {
             // لو مش موجود، أنشئه
             user = await User.create({
                 email,
-                name,
+                username : name,
                 googleId: sub,
                 avatar: picture,
             });
         }
 
-        // أنشئ JWT خاص بيك
-        const accessToken = generateToken({ id: user._id, email: user.email });
+        const accessToken = generateToken({ id: user._id, email: user.email, role: user.role });
+        const refreshToken = generateRefreshToken({ id: user._id });
 
-        res.json({
-            message: "Authenticated successfully",
-            accessToken,
-            user,
-        });
+        // أنشئ JWT خاص بيك
+             // ✅ تخزين التوكنات في الكوكيز
+             res.cookie("accessToken", accessToken, {
+                httpOnly: true,
+                // secure: process.env.NODE_ENV === "production",
+                secure: true,
+
+                sameSite: "none",
+                maxAge: 15 * 60 * 1000,
+            });
+
+            res.cookie("refreshToken", refreshToken, {
+                httpOnly: true,
+                // secure: process.env.NODE_ENV === "production",
+                secure: true,
+
+                sameSite: "none",
+                maxAge: 7 * 24 * 60 * 60 * 1000,
+            });
+
+            res.status(200).json({
+                message: "Login successful (web)",
+                user: { id: user._id, username: user.username, email: user.email },
+            });
+            
     } catch (error) {
         console.error("Google Auth Error:", error);
         res.status(401).json({ error: "Invalid Google token" });
