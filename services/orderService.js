@@ -15,15 +15,15 @@ export const createOrder = async (userId, address, phone) => {
       throw new Error('Cart empty (السلة فاضية)');
     }
   
-    // 1) التحقق من المخزون فقط للمنتجات اللي ليها stock
-    for (const item of cart.items) {
-      const product = item.productId;
-      if (product.stock != null) { // Inventory tracked (المخزون متتبع)
-        if (product.stock < item.qty) {
-          throw new Error(`Insufficient stock (مخزون غير كافٍ) for ${product.name}`);
-        }
-      }
-    }
+    // // 1) التحقق من المخزون فقط للمنتجات اللي ليها stock
+    // for (const item of cart.items) {
+    //   const product = item.productId;
+    //   if (product.stock != null) { // Inventory tracked (المخزون متتبع)
+    //     if (product.stock < item.qty) {
+    //       throw new Error(`Insufficient stock (مخزون غير كافٍ) for ${product.name}`);
+    //     }
+    //   }
+    // }
   
     // 2) بناء عناصر الطلب من كل السلة
     const orderItems = cart.items.map(item => ({
@@ -44,18 +44,18 @@ export const createOrder = async (userId, address, phone) => {
     });
   
     // 3) تقليل المخزون بشكل مجمع للمنتجات اللي ليها stock فقط
-    const stockOps = cart.items
-      .filter(item => item.productId.stock != null)
-      .map(item => ({
-        updateOne: {
-          filter: { _id: item.productId._id },
-          update: { $inc: { stock: -Number(item.qty) } }
-        }
-      }));
+    // const stockOps = cart.items
+    //   .filter(item => item.productId.stock != null)
+    //   .map(item => ({
+    //     updateOne: {
+    //       filter: { _id: item.productId._id },
+    //       update: { $inc: { stock: -Number(item.qty) } }
+    //     }
+    //   }));
   
-    if (stockOps.length > 0) {
-      await Product.bulkWrite(stockOps);
-    }
+    // if (stockOps.length > 0) {
+    //   await Product.bulkWrite(stockOps);
+    // }
   
     // 4) إرسال الإشعارات
     const user = await User.findById(userId);
