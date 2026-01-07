@@ -1,5 +1,5 @@
 import express from 'express';
-import { registerUser, loginUser, getMe , logiadmin ,refreshAccessToken , verifyAccessToken , verifyadminAccessToken , AdminRefreshAccessToken , logoutUser} from '../controllers/authController.js';
+import { registerUser, loginUser, getMe , logiadmin ,refreshAccessToken , verifyAccessToken , verifyadminAccessToken , AdminRefreshAccessToken , logoutUser  , googleAuth } from '../controllers/authController.js';
 import { authMiddleware as protect } from '../middleware/authMiddleware.js';
 import { adminAuthMiddleware } from '../middleware/adminAuthMiddleware.js';
 const router = express.Router();
@@ -17,5 +17,8 @@ router.post('/login', loginUser);
 router.post('/refresh', refreshAccessToken);
 router.post('/verify',protect , verifyAccessToken);
 router.post('/logout', logoutUser);
+
+//google auth
+router.post('/google', googleAuth);
 
 export default router;
