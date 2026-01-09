@@ -27,7 +27,7 @@ const registerUser = async (userData) => {
 };
 
 // استدعاء الدالة
-registerUser({ username: 'مثال', email: 'مثال@بريد.com', password: '123456' });
+registerUser({ username: 'مثال', email: 'مثال@بريد.com', password: '123456' , client: 'web' phone: '07701234567'});
 ```
 
 ### 2. تسجيل الدخول (وضع الويب والموبايل)
@@ -40,7 +40,7 @@ registerUser({ username: 'مثال', email: 'مثال@بريد.com', password: '
 fetch('http://localhost:5000/api/auth/login', {
   method: 'POST',
   headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({ email: 'مثال@بريد.com', password: '123456', client: 'web' }),
+  body: JSON.stringify({ email: 'مثال@بريد.com', password: '123456', client: 'web' , phone: '07701234567' }),
   credentials: 'include' // لدعم الكوكيز (من <mcfolder name="middleware" path="d:\new valume 1 D\my project\projects with dina abaza\e-comm\middleware"></mcfolder>)
 })
 .then(response => response.json())

@@ -4,7 +4,7 @@ import { Schema, model } from 'mongoose';
 const userSchema = new Schema({
     username: { type: String},
     email: { type: String , unique: true },
-    phone: { type: String, unique: true, sparse: true },
+    phone: { type: String, unique: true, sparse: true , required: false },
     password: { type: String},
     avatar: { type: String },   // صورة البروفايل من Google
     googleId: { type: String }, // sub اللي جاي من Google
