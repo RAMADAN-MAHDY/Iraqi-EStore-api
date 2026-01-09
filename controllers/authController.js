@@ -6,12 +6,12 @@ import { OAuth2Client } from 'google-auth-library';
 import { sendOtp, verifyOtp, loginWithPhone } from '../services/authService.js';
 
 
-const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID, process.env.GOOGLE_CLIENT_SECRET);
+const clientOA = new OAuth2Client(process.env.GOOGLE_CLIENT_ID, process.env.GOOGLE_CLIENT_SECRET);
 
 // POST /auth/google
 export const googleAuth = async (req, res)=> {
     try {
-        const { token } = req.body;
+        const { token , client} = req.body;
 
         if (!token) {
             res.status(400).json({ error: "Token is required" });
@@ -21,7 +21,7 @@ export const googleAuth = async (req, res)=> {
         //407408718192.apps.googleusercontent.com           client ID testing from playground
         // console.log("Google Token Received:", token);
         // تحقق من التوكين عند جوجل
-        const ticket = await client.verifyIdToken({
+        const ticket = await clientOA.verifyIdToken({
             idToken: token,
             audience: process.env.GOOGLE_CLIENT_ID,
         });
@@ -53,8 +53,9 @@ export const googleAuth = async (req, res)=> {
         const accessToken = generateToken({ id: user._id, email: user.email, role: user.role });
         const refreshToken = generateRefreshToken({ id: user._id });
 
-        // أنشئ JWT خاص بيك
-             // ✅ تخزين التوكنات في الكوكيز
+        if (client === "web") {
+            // ✅ تخزين التوكنات في الكوكيز
+                // أنشئ JWT خاص بيك
              res.cookie("accessToken", accessToken, {
                 httpOnly: true,
                 // secure: process.env.NODE_ENV === "production",
@@ -77,14 +78,23 @@ export const googleAuth = async (req, res)=> {
                 message: "Login successful (web)",
                 user: { id: user._id, username: user.username, email: user.email },
             });
+        }else{
+            // ✅ إرجاع التوكنات في response body (للموبايل)
+            res.status(200).json({
+                message: "Login successful (mobile)",
+                tokens: { accessToken, refreshToken },
+                user: { id: user._id, username: user.username, email: user.email , avatar: user.avatar},
+            });
+            return;
+        }
+
+    
             
     } catch (error) {
         console.error("Google Auth Error:", error);
         res.status(401).json({ error: "Invalid Google token" });
     }
 };
-
-
 
 // إنشاء حساب جديد
 export const registerUser = async (req, res)=> {
@@ -159,7 +169,7 @@ export const sendOtpCode = asyncHandler(async (req, res) => {
 });
 
 export const verifyOtpCode = asyncHandler(async (req, res) => {
-  const { phone, otpCode } = req.body;
+  const { phone, otpCode , client } = req.body;
 
   if (!phone || !otpCode) {
     res.status(400).json({ message: 'Phone number and OTP code are required' });
@@ -174,24 +184,32 @@ export const verifyOtpCode = asyncHandler(async (req, res) => {
       const accessToken = generateToken({ id: user._id, email: user.email, role: user.role });
       const refreshToken = generateRefreshToken({ id: user._id });
 
-      res.cookie("accessToken", accessToken, {
-        httpOnly: true,
-        secure: true,
-        sameSite: "none",
-        maxAge: 15 * 60 * 1000,
-      });
-
-      res.cookie("refreshToken", refreshToken, {
-        httpOnly: true,
-        secure: true,
-        sameSite: "none",
-        maxAge: 7 * 24 * 60 * 60 * 1000,
-      });
-
-      res.status(200).json({
-        message: "Login successful",
-        user: { id: user._id, username: user.username, email: user.email, phone: user.phone },
-      });
+      if (client === "web") {
+        res.cookie("accessToken", accessToken, {
+            httpOnly: true,
+            secure: true,
+            sameSite: "none",
+            maxAge: 15 * 60 * 1000,
+          });
+    
+          res.cookie("refreshToken", refreshToken, {
+            httpOnly: true,
+            secure: true,
+            sameSite: "none",
+            maxAge: 7 * 24 * 60 * 60 * 1000,
+          });
+    
+          res.status(200).json({
+            message: "Login successful",
+            user: { id: user._id, username: user.username, email: user.email, phone: user.phone },
+          });
+      }else{
+        res.status(200).json({
+          message: "Login successful",
+          user: { id: user._id, username: user.username, email: user.email, phone: user.phone },
+          tokens: { accessToken, refreshToken },
+        });
+      }
     } else {
       res.status(400).json({ message: 'Invalid OTP code' });
     }
