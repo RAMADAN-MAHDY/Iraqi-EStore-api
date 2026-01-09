@@ -3,6 +3,7 @@ import bcrypt from 'bcryptjs';
 import User from '../models/User.js';
 import { generateToken, generateRefreshToken, verifyToken, verifyRefreshToken } from '../utils/jwt.js';
 import { OAuth2Client } from 'google-auth-library';
+import { sendOtp, verifyOtp, loginWithPhone } from '../services/authService.js';
 
 
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID, process.env.GOOGLE_CLIENT_SECRET);
@@ -88,10 +89,10 @@ export const googleAuth = async (req, res)=> {
 // إنشاء حساب جديد
 export const registerUser = async (req, res)=> {
     try {
-        const { username, email, password , role } = req.body;
+        const { username, email, phone, password , role } = req.body;
 
         // ✅ التحقق من إدخال البيانات
-        if (!username || !email || !password) {
+        if (!username || !email || !phone || !password) {
             res.status(400).json({ message: "All fields are required" });
             return;
         }
@@ -103,6 +104,11 @@ export const registerUser = async (req, res)=> {
             return;
         }
 
+        const existingPhone = await User.findOne({ phone });
+        if (existingPhone) {
+            res.status(409).json({ message: "Phone number already registered" });
+            return;
+        }
 
         // ✅ تشفير الباسورد
         const salt = await bcrypt.genSalt(10);
@@ -112,6 +118,7 @@ export const registerUser = async (req, res)=> {
         const newUser = new User({
             username,
             email,
+            phone,
             password: hashedPassword,
             role: role,
         });
@@ -125,6 +132,7 @@ export const registerUser = async (req, res)=> {
                 id: newUser._id,
                 username: newUser.username,
                 email: newUser.email,
+                phone: newUser.phone,
                 createdAt: newUser.createdAt,
             },
         });
@@ -133,6 +141,64 @@ export const registerUser = async (req, res)=> {
         res.status(500).json({ message: "Server error" });
     }
 };
+
+export const sendOtpCode = asyncHandler(async (req, res) => {
+  const { phone } = req.body;
+
+  if (!phone) {
+    res.status(400).json({ message: 'Phone number is required' });
+    return;
+  }
+
+  try {
+    await sendOtp(phone);
+    res.status(200).json({ message: 'OTP sent successfully' });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+export const verifyOtpCode = asyncHandler(async (req, res) => {
+  const { phone, otpCode } = req.body;
+
+  if (!phone || !otpCode) {
+    res.status(400).json({ message: 'Phone number and OTP code are required' });
+    return;
+  }
+
+  try {
+    const isVerified = await verifyOtp(phone, otpCode);
+
+    if (isVerified) {
+      const user = await loginWithPhone(phone);
+      const accessToken = generateToken({ id: user._id, email: user.email, role: user.role });
+      const refreshToken = generateRefreshToken({ id: user._id });
+
+      res.cookie("accessToken", accessToken, {
+        httpOnly: true,
+        secure: true,
+        sameSite: "none",
+        maxAge: 15 * 60 * 1000,
+      });
+
+      res.cookie("refreshToken", refreshToken, {
+        httpOnly: true,
+        secure: true,
+        sameSite: "none",
+        maxAge: 7 * 24 * 60 * 60 * 1000,
+      });
+
+      res.status(200).json({
+        message: "Login successful",
+        user: { id: user._id, username: user.username, email: user.email, phone: user.phone },
+      });
+    } else {
+      res.status(400).json({ message: 'Invalid OTP code' });
+    }
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
 
 
 // Get user profile

@@ -13,7 +13,7 @@ import orderRoutes from './routes/orderRoutes.js';
 import siteSettingsRoutes from './routes/siteSettingsRoutes.js';
 import storeRoutes from './routes/storeRoutes.js';
 import { notFound, errorHandler } from './middleware/errorHandler.js';
-import { startTelegramBot } from './services/telegramService.js';
+import { startTelegramBot, bot } from './services/telegramService.js';
 
 dotenv.config();
 
@@ -63,8 +63,12 @@ app.get('/', (req, res) => {
 app.use(notFound);
 app.use(errorHandler);
 
-startTelegramBot();
 // Start the server
 app.listen(PORT, () => {
+  startTelegramBot();
   console.log(`Server running on port http://localhost:${PORT}`);
 });
+
+// Enable graceful stop
+process.once('SIGINT', () => bot.stop('SIGINT'));
+process.once('SIGTERM', () => bot.stop('SIGTERM'));

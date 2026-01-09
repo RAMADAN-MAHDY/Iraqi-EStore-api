@@ -1,6 +1,6 @@
 import Product from '../models/Product.js';
 
-export const createProduct = async (name, price, discountedPrice, discountActive, category, stock, image, weight) => {
+export const createProduct = async (name, price, discountedPrice, discountActive, category, stock, image, weight, description) => {
     // تحويل القيم الرقمية والـ boolean
     price = Number(price);
     discountedPrice = Number(discountedPrice);
@@ -42,6 +42,7 @@ export const createProduct = async (name, price, discountedPrice, discountActive
       stock,
       image,
       weight,
+      description,
     });
   
     await product.save();
@@ -155,7 +156,7 @@ export const searchProducts = async (keyword, page = 1, limit = 10) => {
     const query = { $text: { $search: keyword } };
   
     // جلب المنتجات مع الحقول المهمة فقط
-    const products = await Product.find(query, 'name price discountPrice discountPercent discountActive stock category image')
+    const products = await Product.find(query, 'name price discountPrice discountPercent discountActive stock category image weight description')
       .populate('category', 'name')
       .sort({ score: { $meta: 'textScore' } }) // ترتيب حسب التطابق مع البحث
       .limit(limit)
@@ -198,7 +199,7 @@ export const autocompleteProducts = async (keyword, limit = 5) => {
   
     const products = await Product.find(
       { name: regex },
-      { name: 1, price: 1, discountPrice: 1, discountPercent: 1, discountActive: 1 } // جلب الحقول المهمة
+      { name: 1, price: 1, discountPrice: 1, discountPercent: 1, discountActive: 1 , description: 1 } // جلب الحقول المهمة
     )
       .sort({ name: 1 }) // ترتيب أبجدي
       .limit(limit)

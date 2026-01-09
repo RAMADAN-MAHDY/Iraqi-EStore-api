@@ -43,6 +43,11 @@ const ProductSchema = new mongoose.Schema({
     type: Number,
     min: 0,
     required: false // Make it optional for now, can be changed later if needed
+  },
+  description: {
+    type: String,
+    required: false,
+    trim: true
   }
 }, {
   timestamps: true

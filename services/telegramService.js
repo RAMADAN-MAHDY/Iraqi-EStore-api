@@ -1,7 +1,7 @@
 import { Telegraf } from 'telegraf';
 import StoreOwner from '../models/StoreOwner.js';
 
-const bot = new Telegraf(process.env.TELEGRAM_BOT_TOKEN);
+export const bot = new Telegraf(process.env.TELEGRAM_BOT_TOKEN);
 
 // تشغيل البوت
 export const startTelegramBot = () => {
