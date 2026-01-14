@@ -1,10 +1,16 @@
 import { Telegraf } from 'telegraf';
 import StoreOwner from '../models/StoreOwner.js';
 
-export const bot = new Telegraf(process.env.TELEGRAM_BOT_TOKEN);
+export let bot;
 
-// تشغيل البوت
-export const startTelegramBot = () => {
+export const startTelegramBot = async () => {
+  console.log('Initializing Telegram bot...');
+  const token = process.env.TELEGRAM_BOT_TOKEN;
+  if (!token) {
+    console.error('TELEGRAM_BOT_TOKEN is missing');
+    return;
+  }
+  bot = new Telegraf(token);
   bot.start((ctx) => {
     ctx.reply('🤖 هذا البوت مخصّص لإشعارات المتجر، أرسل كلمة المرور حتى يتم الربط.');
   });
@@ -46,13 +52,22 @@ export const startTelegramBot = () => {
     }
   });
 
-  bot.launch();
+  try {
+    await bot.telegram.deleteWebhook({ drop_pending_updates: true });
+  } catch (e) {
+    console.error('Failed to delete Telegram webhook', e);
+  }
+  await bot.launch();
   console.log('🚀 Telegram bot launched and polling...');
 };
 
 // إرسال إشعار لأي chatId
 export const sendTelegramNotification = async (chatId, message) => {
   try {
+    if (!bot) {
+      console.error('Telegram bot is not initialized');
+      return;
+    }
     await bot.telegram.sendMessage(chatId, message, { parse_mode: 'Markdown' });
     console.log(`Notification sent to chat ID ${chatId}`);
   } catch (error) {

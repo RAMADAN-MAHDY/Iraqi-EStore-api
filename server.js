@@ -65,8 +65,11 @@ app.use(errorHandler);
 
 // Start the server
 app.listen(PORT, () => {
-  startTelegramBot();
-  console.log(`Server running on port http://localhost:${PORT}`);
+    console.log(`Server running on port http://localhost:${PORT}`);
+    console.log('About to initialize Telegram bot...');
+    startTelegramBot().catch((err) => {
+        console.error('Telegram bot start failed', err);
+    });
 });
 
 // Enable graceful stop

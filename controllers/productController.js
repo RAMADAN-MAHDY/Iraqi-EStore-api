@@ -6,8 +6,8 @@ import  uploadToImgBB  from '../utils/uploadToImgBB.js';
 // @route   POST /api/products
 // @access  Private/Admin
 export const create = asyncHandler(async (req, res) => {
-  const { name, price, discountedPrice, discountActive, category, stock, weight, description } = req.body;
-// console.log(req.body);
+  const { name, price, discountedPrice, discountActive, category, stock: stockRaw, weight, description } = req.body;
+console.log(req.body);
   // Check if all required fields are provided
   if (!req.file) {
     return res.status(400).json({
@@ -15,6 +15,11 @@ export const create = asyncHandler(async (req, res) => {
       message: "Product image is required (صورة المنتج مطلوبة)"
     });
   }
+  // Check if stock is valid
+ let stockValue = null;
+if(Number(stockRaw) > 0) {
+  stockValue = Number(stockRaw);
+}
 
   if (!name || !price || !category) {
     return res.status(422).json({
@@ -34,7 +39,7 @@ export const create = asyncHandler(async (req, res) => {
   const img = await uploadToImgBB(req.file.buffer);
 
   try {
-    const product = await createProduct(name, price, discountedPrice, discountActive, category, stock, img.url, weight, description);
+    const product = await createProduct(name, price, discountedPrice, discountActive, category, stockValue, img.url, weight, description);
     res.status(201).json(product);
   } catch (error) {
     res.status(400).json({ message: error.message });

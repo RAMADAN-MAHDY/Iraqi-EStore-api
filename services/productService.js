@@ -1,12 +1,13 @@
 import Product from '../models/Product.js';
 
-export const createProduct = async (name, price, discountedPrice, discountActive, category, stock, image, weight, description) => {
+export const createProduct = async (name, price, discountedPrice, discountActive, category, stockValue, image, weight, description) => {
     // تحويل القيم الرقمية والـ boolean
+    console.log(stockValue)
     price = Number(price);
     discountedPrice = Number(discountedPrice);
     discountActive = discountActive === true || discountActive === "true"; // normalize boolean
     weight = weight ? Number(weight) : null;
-    stock = stock ? Number(stock) : 0;
+    let stock = stockValue ;
   
     if (price <= 0) {
       throw new Error("Price must be greater than 0");
