@@ -129,6 +129,14 @@ export const registerUser = async (req, res) => {
                 message: "Invalid email format",
             });
         }
+        /* =======================
+              3️⃣ Email Validation length
+           ======================= */
+        if (email.length < 6 || email.length > 100) {
+            return res.status(400).json({
+                message: "Email length must be between 6 and 100 characters",
+            });
+        }
 
         /* =======================
            5️⃣ Password Policy
@@ -363,7 +371,7 @@ export const loginUser = async (req, res) => {
             res.status(400).json({ message: "Email and password are required" });
             return;
         }
-          // Validate password length
+        // Validate password length
         if (password.length > 12 && password.length < 6) {
             res.status(400).json({ message: "Password must be between 6 and 12 characters" });
             return;
