@@ -1,0 +1,87 @@
+@baseUrl = http://localhost:5000/api/auth
+
+### 1. Register User (Success)
+POST {{baseUrl}}/register
+Content-Type: application/json
+
+{
+    "username": "testuser",
+    "email": "testuser@example.com",
+    "phone": "0123456789",
+    "password": "password123"
+}
+
+### 2. Register User (Invalid Email - Should Fail with Joi Error)
+POST {{baseUrl}}/register
+Content-Type: application/json
+
+{
+    "username": "testuser",
+    "email": "invalid-email",
+    "phone": "0123456789",
+    "password": "password123"
+}
+
+### 3. Register User (Short Password - Should Fail with Joi Error)
+POST {{baseUrl}}/register
+Content-Type: application/json
+
+{
+    "username": "testuser",
+    "email": "testuser2@example.com",
+    "phone": "0123456789",
+    "password": "123"
+}
+
+### 4. Login User (Success)
+POST {{baseUrl}}/login
+Content-Type: application/json
+
+{
+    "email": "testuser@example.com",
+    "password": "password123",
+    "client": "web"
+}
+
+### 5. Login User (Invalid Email Format - Should Fail)
+POST {{baseUrl}}/login
+Content-Type: application/json
+
+{
+    "email": "bademail",
+    "password": "password123"
+}
+
+### 6. Login Admin (Success - Assuming Admin exists)
+POST {{baseUrl}}/loginadmin
+Content-Type: application/json
+
+{
+    "email": "admin@example.com",
+    "password": "adminpassword",
+    "client": "web"
+}
+
+### 7. Send OTP (Missing Phone - Should Fail)
+POST {{baseUrl}}/send-otp
+Content-Type: application/json
+
+{
+    "phone": ""
+}
+
+### 8. Send OTP (Valid)
+POST {{baseUrl}}/send-otp
+Content-Type: application/json
+
+{
+    "phone": "+201234567890"
+}
+
+### 9. Verify OTP (Missing Code - Should Fail)
+POST {{baseUrl}}/verify-otp
+Content-Type: application/json
+
+{
+    "phone": "+201234567890"
+}

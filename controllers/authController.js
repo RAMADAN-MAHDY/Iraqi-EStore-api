@@ -4,6 +4,14 @@ import User from '../models/User.js';
 import { generateToken, generateRefreshToken, verifyToken, verifyRefreshToken } from '../utils/jwt.js';
 import { OAuth2Client } from 'google-auth-library';
 import { sendOtp, verifyOtp, loginWithPhone } from '../services/authService.js';
+import {
+    registerSchema,
+    loginSchema,
+    loginAdminSchema,
+    sendOtpSchema,
+    verifyOtpSchema,
+    googleAuthSchema
+} from '../validators/authValidators.js';
 
 
 const clientOA = new OAuth2Client(process.env.GOOGLE_CLIENT_ID, process.env.GOOGLE_CLIENT_SECRET);
@@ -11,12 +19,12 @@ const clientOA = new OAuth2Client(process.env.GOOGLE_CLIENT_ID, process.env.GOOG
 // POST /auth/google
 export const googleAuth = async (req, res) => {
     try {
-        const { token, client } = req.body;
-
-        if (!token) {
-            res.status(400).json({ error: "Token is required" });
-            return;
+        const { error, value } = googleAuthSchema.validate(req.body);
+        if (error) {
+            return res.status(400).json({ error: error.details[0].message });
         }
+        const { token, client } = value;
+
         // process.env.GOOGLE_CLIENT_ID
         //407408718192.apps.googleusercontent.com           client ID testing from playground
         // console.log("Google Token Received:", token);
@@ -99,61 +107,11 @@ export const googleAuth = async (req, res) => {
 // إنشاء حساب جديد
 export const registerUser = async (req, res) => {
     try {
-        let { username, email, phone, password } = req.body;
-
-        /* =======================
-           1️⃣ Normalize & Sanitize
-        ======================= */
-        username = username?.trim();
-        email = email?.trim().toLowerCase();
-        phone = phone?.trim();
-        password = password?.trim();
-
-        /* =======================
-           2️⃣ Required Fields
-        ======================= */
-        if (!username || !email || !phone || !password) {
-            return res.status(400).json({
-                message: "All fields are required",
-            });
+        const { error, value } = registerSchema.validate(req.body);
+        if (error) {
+            return res.status(400).json({ message: error.details[0].message });
         }
-
-        /* =======================
-           3️⃣ Email Validation
-        ======================= */
-        const emailRegex =
-            /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-        if (!emailRegex.test(email)) {
-            return res.status(400).json({
-                message: "Invalid email format",
-            });
-        }
-        /* =======================
-              3️⃣ Email Validation length
-           ======================= */
-        if (email.length < 6 || email.length > 100) {
-            return res.status(400).json({
-                message: "Email length must be between 6 and 100 characters",
-            });
-        }
-
-        /* =======================
-           5️⃣ Password Policy
-        ======================= */
-        if (password.length < 6 || password.length > 12) {
-            return res.status(400).json({
-                message: "Password must be between 6 and 12 characters",
-            });
-        }
-        /* =======================
-           4️⃣ Username Validation
-        ======================= */
-        if (username.length < 5 || username.length > 20) {
-            return res.status(400).json({
-                message: "Username must be between 5 and 20 characters",
-            });
-        }
+        const { username, email, phone, password } = value;
 
         /* =======================
            6️⃣ Check Existing User
@@ -211,12 +169,11 @@ export const registerUser = async (req, res) => {
 
 
 export const sendOtpCode = asyncHandler(async (req, res) => {
-    const { phone } = req.body;
-
-    if (!phone) {
-        res.status(400).json({ message: 'Phone number is required' });
-        return;
+    const { error, value } = sendOtpSchema.validate(req.body);
+    if (error) {
+        return res.status(400).json({ message: error.details[0].message });
     }
+    const { phone } = value;
 
     try {
         await sendOtp(phone);
@@ -227,12 +184,11 @@ export const sendOtpCode = asyncHandler(async (req, res) => {
 });
 
 export const verifyOtpCode = asyncHandler(async (req, res) => {
-    const { phone, otpCode, client } = req.body;
-
-    if (!phone || !otpCode) {
-        res.status(400).json({ message: 'Phone number and OTP code are required' });
-        return;
+    const { error, value } = verifyOtpSchema.validate(req.body);
+    if (error) {
+        return res.status(400).json({ message: error.details[0].message });
     }
+    const { phone, otpCode, client } = value;
 
     try {
         const isVerified = await verifyOtp(phone, otpCode);
@@ -287,22 +243,11 @@ export const getMe = asyncHandler(async (req, res) => {
 // يمكنك إضافة دوال تسجيل الدخول وتسجيل الخروج هنا لاحقًا
 export const logiadmin = async (req, res) => {
     try {
-        const { email, password, client } = req.body;
-
-        if (!email || !password) {
-            res.status(400).json({ message: "All fields are required" });
-            return;
+        const { error, value } = loginAdminSchema.validate(req.body);
+        if (error) {
+            return res.status(400).json({ message: error.details[0].message });
         }
-        if (!email.includes("@")) {
-            res.status(400).json({ message: "Email must contain @ symbol" });
-            return;
-        }
-
-        if (password.length > 12 && password.length < 6) {
-            res.status(400).json({ message: "Password must be between 6 and 12 characters" });
-            return;
-        }
-
+        const { email, password, client } = value;
 
         const user = await User.findOne({ email });
         if (!user || user.role !== "admin") {
@@ -363,28 +308,12 @@ export const logiadmin = async (req, res) => {
 
 export const loginUser = async (req, res) => {
     try {
-        const { email, password, client } = req.body;
+        const { error, value } = loginSchema.validate(req.body);
+        if (error) {
+            return res.status(400).json({ message: error.details[0].message });
+        }
+        const { email, password, client } = value;
         // client = "web" أو "mobile" يجي من الـ frontend
-
-        // Validate email and password
-        if (!email || !password) {
-            res.status(400).json({ message: "Email and password are required" });
-            return;
-        }
-        // Validate password length
-        if (password.length > 12 && password.length < 6) {
-            res.status(400).json({ message: "Password must be between 6 and 12 characters" });
-            return;
-        }
-
-        // Validate email format
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-        if (!emailRegex.test(email)) {
-            return res.status(400).json({
-                message: "Invalid email format",
-            });
-        }
 
         const user = await User.findOne({ email });
         if (!user) {
