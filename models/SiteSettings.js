@@ -4,6 +4,7 @@ const SiteSettingsSchema = new mongoose.Schema({
   footerText: {
     type: String,
     required: false
+    // max: 200
   },
   contactEmail: {
     type: String,
