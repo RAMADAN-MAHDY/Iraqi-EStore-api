@@ -9,9 +9,9 @@ import { sendOtp, verifyOtp, loginWithPhone } from '../services/authService.js';
 const clientOA = new OAuth2Client(process.env.GOOGLE_CLIENT_ID, process.env.GOOGLE_CLIENT_SECRET);
 
 // POST /auth/google
-export const googleAuth = async (req, res)=> {
+export const googleAuth = async (req, res) => {
     try {
-        const { token , client} = req.body;
+        const { token, client } = req.body;
 
         if (!token) {
             res.status(400).json({ error: "Token is required" });
@@ -44,7 +44,7 @@ export const googleAuth = async (req, res)=> {
             // لو مش موجود، أنشئه
             user = await User.create({
                 email,
-                username : name,
+                username: name,
                 googleId: sub,
                 avatar: picture,
             });
@@ -55,8 +55,8 @@ export const googleAuth = async (req, res)=> {
 
         if (client === "web") {
             // ✅ تخزين التوكنات في الكوكيز
-                // أنشئ JWT خاص بيك
-             res.cookie("accessToken", accessToken, {
+            // أنشئ JWT خاص بيك
+            res.cookie("accessToken", accessToken, {
                 httpOnly: true,
                 // secure: process.env.NODE_ENV === "production",
                 secure: true,
@@ -78,18 +78,18 @@ export const googleAuth = async (req, res)=> {
                 message: "Login successful (web)",
                 user: { id: user._id, username: user.username, email: user.email },
             });
-        }else{
+        } else {
             // ✅ إرجاع التوكنات في response body (للموبايل)
             res.status(200).json({
                 message: "Login successful (mobile)",
                 tokens: { accessToken, refreshToken },
-                user: { id: user._id, username: user.username, email: user.email , avatar: user.avatar},
+                user: { id: user._id, username: user.username, email: user.email, avatar: user.avatar },
             });
             return;
         }
 
-    
-            
+
+
     } catch (error) {
         console.error("Google Auth Error:", error);
         res.status(401).json({ error: "Invalid Google token" });
@@ -97,150 +97,209 @@ export const googleAuth = async (req, res)=> {
 };
 
 // إنشاء حساب جديد
-export const registerUser = async (req, res)=> {
+export const registerUser = async (req, res) => {
     try {
-        const { username, email, phone, password , role } = req.body;
+        let { username, email, phone, password } = req.body;
 
-        // ✅ التحقق من إدخال البيانات
+        /* =======================
+           1️⃣ Normalize & Sanitize
+        ======================= */
+        username = username?.trim();
+        email = email?.trim().toLowerCase();
+        phone = phone?.trim();
+        password = password?.trim();
+
+        /* =======================
+           2️⃣ Required Fields
+        ======================= */
         if (!username || !email || !phone || !password) {
-            res.status(400).json({ message: "All fields are required" });
-            return;
+            return res.status(400).json({
+                message: "All fields are required",
+            });
         }
 
-        // ✅ التأكد إن بريد المستخدم مش موجود
-        const existingUser = await User.findOne({ email });
+        /* =======================
+           3️⃣ Email Validation
+        ======================= */
+        const emailRegex =
+            /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+        if (!emailRegex.test(email)) {
+            return res.status(400).json({
+                message: "Invalid email format",
+            });
+        }
+
+        /* =======================
+           5️⃣ Password Policy
+        ======================= */
+        if (password.length < 6 || password.length > 12) {
+            return res.status(400).json({
+                message: "Password must be between 6 and 12 characters",
+            });
+        }
+        /* =======================
+           4️⃣ Username Validation
+        ======================= */
+        if (username.length < 5 || username.length > 20) {
+            return res.status(400).json({
+                message: "Username must be between 5 and 20 characters",
+            });
+        }
+
+        /* =======================
+           6️⃣ Check Existing User
+        ======================= */
+        const existingUser = await User.findOne({
+            $or: [{ email }, { phone }],
+        });
+
         if (existingUser) {
-            res.status(409).json({ message: "Email already registered" });
-            return;
+            return res.status(409).json({
+                message: "Email or phone already registered",
+            });
         }
 
-        const existingPhone = await User.findOne({ phone });
-        if (existingPhone) {
-            res.status(409).json({ message: "Phone number already registered" });
-            return;
-        }
-
-        // ✅ تشفير الباسورد
+        /* =======================
+           7️⃣ Hash Password
+        ======================= */
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(password, salt);
-
-        // ✅ إنشاء المستخدم
+        /* =======================
+           8️⃣ Create User
+           (role NOT from request)
+        ======================= */
         const newUser = new User({
             username,
             email,
             phone,
             password: hashedPassword,
-            role: role,
+            role: "user", // hard-coded (Best Practice)
         });
 
         await newUser.save();
 
-        // ✅ إرجاع رد بدون الباسورد
-        res.status(201).json({
+        /* =======================
+           9️⃣ Response (No Password)
+        ======================= */
+        return res.status(201).json({
             message: "User registered successfully",
             user: {
                 id: newUser._id,
                 username: newUser.username,
                 email: newUser.email,
                 phone: newUser.phone,
+                role: newUser.role,
                 createdAt: newUser.createdAt,
             },
         });
     } catch (error) {
         console.error("Register Error:", error);
-        res.status(500).json({ message: "Server error" });
+        return res.status(500).json({
+            message: "Server error",
+        });
     }
 };
 
+
 export const sendOtpCode = asyncHandler(async (req, res) => {
-  const { phone } = req.body;
+    const { phone } = req.body;
 
-  if (!phone) {
-    res.status(400).json({ message: 'Phone number is required' });
-    return;
-  }
+    if (!phone) {
+        res.status(400).json({ message: 'Phone number is required' });
+        return;
+    }
 
-  try {
-    await sendOtp(phone);
-    res.status(200).json({ message: 'OTP sent successfully' });
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
+    try {
+        await sendOtp(phone);
+        res.status(200).json({ message: 'OTP sent successfully' });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
 });
 
 export const verifyOtpCode = asyncHandler(async (req, res) => {
-  const { phone, otpCode , client } = req.body;
+    const { phone, otpCode, client } = req.body;
 
-  if (!phone || !otpCode) {
-    res.status(400).json({ message: 'Phone number and OTP code are required' });
-    return;
-  }
-
-  try {
-    const isVerified = await verifyOtp(phone, otpCode);
-
-    if (isVerified) {
-      const user = await loginWithPhone(phone);
-      const accessToken = generateToken({ id: user._id, email: user.email, role: user.role });
-      const refreshToken = generateRefreshToken({ id: user._id });
-
-      if (client === "web") {
-        res.cookie("accessToken", accessToken, {
-            httpOnly: true,
-            secure: true,
-            sameSite: "none",
-            maxAge: 15 * 60 * 1000,
-          });
-    
-          res.cookie("refreshToken", refreshToken, {
-            httpOnly: true,
-            secure: true,
-            sameSite: "none",
-            maxAge: 7 * 24 * 60 * 60 * 1000,
-          });
-    
-          res.status(200).json({
-            message: "Login successful",
-            user: { id: user._id, username: user.username, email: user.email, phone: user.phone },
-          });
-      }else{
-        res.status(200).json({
-          message: "Login successful",
-          user: { id: user._id, username: user.username, email: user.email, phone: user.phone },
-          tokens: { accessToken, refreshToken },
-        });
-      }
-    } else {
-      res.status(400).json({ message: 'Invalid OTP code' });
+    if (!phone || !otpCode) {
+        res.status(400).json({ message: 'Phone number and OTP code are required' });
+        return;
     }
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
+
+    try {
+        const isVerified = await verifyOtp(phone, otpCode);
+
+        if (isVerified) {
+            const user = await loginWithPhone(phone);
+            const accessToken = generateToken({ id: user._id, email: user.email, role: user.role });
+            const refreshToken = generateRefreshToken({ id: user._id });
+
+            if (client === "web") {
+                res.cookie("accessToken", accessToken, {
+                    httpOnly: true,
+                    secure: true,
+                    sameSite: "none",
+                    maxAge: 15 * 60 * 1000,
+                });
+
+                res.cookie("refreshToken", refreshToken, {
+                    httpOnly: true,
+                    secure: true,
+                    sameSite: "none",
+                    maxAge: 7 * 24 * 60 * 60 * 1000,
+                });
+
+                res.status(200).json({
+                    message: "Login successful",
+                    user: { id: user._id, username: user.username, email: user.email, phone: user.phone },
+                });
+            } else {
+                res.status(200).json({
+                    message: "Login successful",
+                    user: { id: user._id, username: user.username, email: user.email, phone: user.phone },
+                    tokens: { accessToken, refreshToken },
+                });
+            }
+        } else {
+            res.status(400).json({ message: 'Invalid OTP code' });
+        }
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
 });
 
 
 // Get user profile
 export const getMe = asyncHandler(async (req, res) => {
     console.log("getMe called: " + req.user.id);
-  const user = await User.findById(req.user.id).select('-password');
-  res.status(200).json(user);
+    const user = await User.findById(req.user.id).select('-password');
+    res.status(200).json(user);
 });
 
 // يمكنك إضافة دوال تسجيل الدخول وتسجيل الخروج هنا لاحقًا
 export const logiadmin = async (req, res) => {
     try {
-        const { email, password , client } = req.body;
+        const { email, password, client } = req.body;
 
-        if (!email ||!password) {
+        if (!email || !password) {
             res.status(400).json({ message: "All fields are required" });
             return;
         }
+        if (!email.includes("@")) {
+            res.status(400).json({ message: "Email must contain @ symbol" });
+            return;
+        }
+
+        if (password.length > 12 && password.length < 6) {
+            res.status(400).json({ message: "Password must be between 6 and 12 characters" });
+            return;
+        }
+
 
         const user = await User.findOne({ email });
         if (!user || user.role !== "admin") {
             res.status(401).json({ message: "Invalid credentials" });
             return; // هنا لو مش موجود      
-
         }
         const isMatch = await bcrypt.compare(password, user.password);
         if (!isMatch) {
@@ -288,7 +347,7 @@ export const logiadmin = async (req, res) => {
 
 
 
-    }catch (error) {
+    } catch (error) {
         console.error("Login Error:", error);
         res.status(500).json({ message: "Server error" });
     }
@@ -299,9 +358,24 @@ export const loginUser = async (req, res) => {
         const { email, password, client } = req.body;
         // client = "web" أو "mobile" يجي من الـ frontend
 
+        // Validate email and password
         if (!email || !password) {
             res.status(400).json({ message: "Email and password are required" });
             return;
+        }
+          // Validate password length
+        if (password.length > 12 && password.length < 6) {
+            res.status(400).json({ message: "Password must be between 6 and 12 characters" });
+            return;
+        }
+
+        // Validate email format
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+        if (!emailRegex.test(email)) {
+            return res.status(400).json({
+                message: "Invalid email format",
+            });
         }
 
         const user = await User.findOne({ email });
@@ -316,7 +390,7 @@ export const loginUser = async (req, res) => {
             return;
         }
 
-        const accessToken = generateToken({ id: user._id , email: user.email , role: user.role });
+        const accessToken = generateToken({ id: user._id, email: user.email, role: user.role });
         const refreshToken = generateRefreshToken({ id: user._id });
 
         if (client === "web") {
@@ -385,7 +459,7 @@ export const refreshAccessToken = async (
         }
 
         // إنشاء Access Token جديد
-        const newAccessToken = generateToken({ id: (decoded).id , role: "user", email: (decoded).email });
+        const newAccessToken = generateToken({ id: (decoded).id, role: "user", email: (decoded).email });
 
         if (client === "web") {
             res.cookie("accessToken", newAccessToken, {
@@ -428,10 +502,10 @@ export const verifyAccessToken = async (
     }
 };
 // =============== [ VERIFY admin ACCESS TOKEN ] ===============
- 
+
 export const verifyadminAccessToken = async (
     req,
-    res  
+    res
 ) => {
     try {
 
@@ -472,7 +546,7 @@ export const AdminRefreshAccessToken = async (
         }
 
         // إنشاء Access Token جديد
-        const newAccessToken = generateToken({ id: (decoded).id , role: "admin" , email: (decoded).email });
+        const newAccessToken = generateToken({ id: (decoded).id, role: "admin", email: (decoded).email });
 
         if (client === "web") {
             res.cookie("accessToken", newAccessToken, {
