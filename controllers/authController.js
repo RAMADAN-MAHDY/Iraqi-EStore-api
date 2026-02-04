@@ -395,8 +395,14 @@ export const refreshAccessToken = async (
             return;
         }
 
+        const user = await User.findById(decoded.id).select('email role');
+        if (!user) {
+            res.status(404).json({ message: "User not found" });
+            return;
+        }
+
         // إنشاء Access Token جديد
-        const newAccessToken = generateToken({ id: (decoded).id, role: "user", email: (decoded).email });
+        const newAccessToken = generateToken({ id: user._id, role: user.role, email: user.email });
 
         if (client === "web") {
             res.cookie("accessToken", newAccessToken, {
@@ -482,8 +488,18 @@ export const AdminRefreshAccessToken = async (
             return;
         }
 
+        const user = await User.findById(decoded.id).select('email role');
+        if (!user) {
+            res.status(404).json({ message: "User not found" });
+            return;
+        }
+        if (user.role !== "admin") {
+            res.status(403).json({ message: "Admin privileges required" });
+            return;
+        }
+
         // إنشاء Access Token جديد
-        const newAccessToken = generateToken({ id: (decoded).id, role: "admin", email: (decoded).email });
+        const newAccessToken = generateToken({ id: user._id, role: user.role, email: user.email });
 
         if (client === "web") {
             res.cookie("accessToken", newAccessToken, {
