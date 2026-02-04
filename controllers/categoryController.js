@@ -7,8 +7,13 @@ import uploadToImgBB from '../utils/uploadToImgBB.js';
 // @access  Private/Admin
 export const create = asyncHandler(async (req, res) => {
   const { name } = req.body;
-  let image = null;
+  //check name < 20 characters
+  if (name.length > 20) {
+    res.status(400).json({ message: 'Category name must be less than 20 characters' });
+  }
 
+  let image = null;
+  
   if (req.file) {
     const uploadedImage = await uploadToImgBB(req.file.buffer);
     image = uploadedImage.url;
@@ -55,6 +60,11 @@ export const getById = asyncHandler(async (req, res) => {
 // @access  Private/Admin
 export const update = asyncHandler(async (req, res) => {
   const { name } = req.body;
+  //check name < 20 characters
+  if (name.length > 20) {
+    res.status(400).json({ message: 'Category name must be less than 20 characters' });
+  }
+  
   let image = null;
 
   if (req.file) {

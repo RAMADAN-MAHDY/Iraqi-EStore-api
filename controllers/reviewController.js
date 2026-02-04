@@ -20,9 +20,13 @@ export const addReview = asyncHandler(async (req, res) => {
   const { productId, rating, comment } = req.body;
   const r = Number(rating);
   if (!productId || !rating) return res.status(422).json({ message: 'productId and rating are required' });
+
   if (r < 1 || r > 5 || !Number.isInteger(r * 2)) return res.status(422).json({ message: 'Invalid rating' });
-  if (comment && comment.length > 500) return res.status(422).json({ message: 'Comment too long' });
+
+  if (comment && comment.length > 200) return res.status(422).json({ message: 'Comment too long' });
+
   const review = await createReview(userId, productId, r, comment);
+  
   res.status(201).json(review);
 });
 

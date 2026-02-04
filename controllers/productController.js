@@ -2,33 +2,25 @@ import asyncHandler from 'express-async-handler';
 import { createProduct, getProducts, getProductById, updateProduct, deleteProduct, getOfferProducts , searchProducts , autocompleteProducts, getProductCount, getOfferProductCount } from '../services/productService.js';
 import { getCategoryById } from '../services/categoryService.js';
 import  uploadToImgBB  from '../utils/uploadToImgBB.js';
+import { createProductSchema, updateProductSchema } from '../validators/productValidators.js';
+
 // @desc    Create a new product
 // @route   POST /api/products
 // @access  Private/Admin
 export const create = asyncHandler(async (req, res) => {
-  const { name, price, discountedPrice, discountActive, category, stock: stockRaw, weight, description } = req.body;
-console.log(req.body);
-  // Check if all required fields are provided
+  // Check if file exists first (as it's outside Joi validation usually)
   if (!req.file) {
     return res.status(400).json({
       error: "Missing Asset (ملف مرفق مفقود)",
       message: "Product image is required (صورة المنتج مطلوبة)"
     });
   }
-  // Check if stock is valid
- let stockValue = null;
-if(Number(stockRaw) > 0) {
-  stockValue = Number(stockRaw);
-}
 
-  if (!name || !price || !category) {
-    return res.status(422).json({
-      error: "Validation Failure (فشل التحقق)",
-      message: "name, price, category are mandatory (الاسم، السعر، الفئة مطلوبة)"
-    });
-  }
+  // Joi Validation & Type Coercion
+  const value = await createProductSchema.validateAsync(req.body, { abortEarly: false });
 
-  const existingCategory = await getCategoryById(category);
+  // Verify Category Exists
+  const existingCategory = await getCategoryById(value.category);
   if (!existingCategory) {
     return res.status(404).json({
       error: "Category Not Found (الفئة غير موجودة)",
@@ -36,10 +28,15 @@ if(Number(stockRaw) > 0) {
     });
   }
 
+  // Upload Image
   const img = await uploadToImgBB(req.file.buffer);
 
   try {
-    const product = await createProduct(name, price, discountedPrice, discountActive, category, stockValue, img.url, weight, description);
+    // Pass validated data + image URL to service
+    const product = await createProduct({
+        ...value,
+        image: img.url
+    });
     res.status(201).json(product);
   } catch (error) {
     res.status(400).json({ message: error.message });
@@ -79,35 +76,19 @@ export const getById = asyncHandler(async (req, res) => {
 // @desc    Update a product
 // @route   PUT /api/products/:id
 // @access  Private/Admin
-
-const parseFormData = (body) => {
-    const updates = {};
-  
-    if (body.name) updates.name = body.name;
-    if (body.price !== undefined && body.price !== "") updates.price = parseFloat(body.price);
-    if (body.discountPrice !== undefined && body.discountPrice !== "") updates.discountPrice = parseFloat(body.discountPrice);
-    if (body.stock !== undefined && body.stock !== "") updates.stock = parseInt(body.stock);
-    if (body.discountActive === "true") updates.discountActive = true;
-    if (body.discountActive === "false") updates.discountActive = false;
-    if (body.category) updates.category = body.category;
-    if (body.description) updates.description = body.description;
-    if (body.weight !== undefined && body.weight !== "") updates.weight = parseFloat(body.weight);
-  
-    return updates;
-  };
-  
 export const update = asyncHandler(async (req, res) => {
     const { id } = req.params;
   
-    let updates = parseFormData(req.body);
-  
-    // رفع الصورة لو موجودة
+    // Joi Validation & Type Coercion
+    const updates = await updateProductSchema.validateAsync(req.body, { abortEarly: false });
+
+    // Upload Image if present
     if (req.file) {
       const img = await uploadToImgBB(req.file.buffer);
       updates.image = img.url;
     }
   
-    // تحديث المنتج
+    // Update Product via Service
     const product = await updateProduct(id, updates);
   
     res.json({

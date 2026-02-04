@@ -6,7 +6,7 @@ const CategorySchema = new mongoose.Schema({
     required: true,
     unique: true,
     trim: true,
-    max: 20
+    maxlength: [20, 'Category name must be at most 20 characters']
   },
   image: {
     type: String,

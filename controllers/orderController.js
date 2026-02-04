@@ -13,6 +13,14 @@ export const create = asyncHandler(async (req, res) => {
     res.status(400);
     throw new Error('Please fill in all required fields');
   }
+  //check address < 50 characters
+  if (address.length > 50) {
+    res.status(400).json({ message: 'Address must be less than 50 characters' });
+  }
+  //check phone < 15 characters
+  if (phone.length > 15) {
+    res.status(400).json({ message: 'Phone must be less than 15 characters' });
+  }
 
   if (processingOrders.has(userId)) {
     res.status(409);

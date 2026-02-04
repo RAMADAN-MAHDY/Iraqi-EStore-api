@@ -1,0 +1,136 @@
+@baseUrl = http://localhost:5000/api
+
+### 0. Setup: Create New Admin User (Temporary)
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
+
+{
+    "username": "NewAdmin",
+    "email": "newadmin@example.com",
+    "phone": "01000000000",
+    "password": "password123",
+    "role": "admin"
+}
+
+### 1. Login Admin (Required for all following requests)
+# @name adminLogin
+POST {{baseUrl}}/auth/loginadmin
+Content-Type: application/json
+
+{
+    "email": "newadmin@example.com",
+    "password": "password123",
+    "client": "web"
+}
+
+### ===========================
+### CATEGORY VALIDATION TESTS
+### ===========================
+
+### 2. Create Category: Valid
+# @name createCategory
+POST {{baseUrl}}/categories
+Content-Type: application/json
+Authorization: Bearer {{adminLogin.response.body.token}}
+
+{
+    "name": "ValidCat"
+}
+
+### 3. Create Category: Name too long (> 20 chars)
+POST {{baseUrl}}/categories
+Content-Type: application/json
+Authorization: Bearer {{adminLogin.response.body.token}}
+
+{
+    "name": "ThisCategoryNameIsWayTooLongForTheLimit"
+}
+
+### ===========================
+### PRODUCT VALIDATION TESTS
+### ===========================
+
+### 4. Create Product: Valid (Reference Category ID)
+POST {{baseUrl}}/products
+Content-Type: application/json
+Authorization: Bearer {{adminLogin.response.body.token}}
+
+{
+    "name": "Valid Product",
+    "price": 100,
+    "category": "{{createCategory.response.body._id}}",
+    "description": "Valid description"
+}
+
+### 5. Create Product: Name too short (< 2)
+POST {{baseUrl}}/products
+Content-Type: application/json
+Authorization: Bearer {{adminLogin.response.body.token}}
+
+{
+    "name": "A",
+    "price": 100,
+    "category": "{{createCategory.response.body._id}}",
+    "description": "Valid description"
+}
+
+### 6. Create Product: Name too long (> 20)
+POST {{baseUrl}}/products
+Content-Type: application/json
+Authorization: Bearer {{adminLogin.response.body.token}}
+
+{
+    "name": "ThisProductNameIsWayTooLongForTheLimit",
+    "price": 100,
+    "category": "{{createCategory.response.body._id}}",
+    "description": "Valid description"
+}
+
+### 7. Create Product: Price too high (> 1,000,000)
+POST {{baseUrl}}/products
+Content-Type: application/json
+Authorization: Bearer {{adminLogin.response.body.token}}
+
+{
+    "name": "Valid Name",
+    "price": 1000001,
+    "category": "{{createCategory.response.body._id}}",
+    "description": "Valid description"
+}
+
+### 8. Create Product: Weight too high (> 1000)
+POST {{baseUrl}}/products
+Content-Type: application/json
+Authorization: Bearer {{adminLogin.response.body.token}}
+
+{
+    "name": "Valid Name",
+    "price": 100,
+    "category": "{{createCategory.response.body._id}}",
+    "weight": 1001,
+    "description": "Valid description"
+}
+
+### 9. Create Product: Description too long (> 200)
+POST {{baseUrl}}/products
+Content-Type: application/json
+Authorization: Bearer {{adminLogin.response.body.token}}
+
+{
+    "name": "Valid Name",
+    "price": 100,
+    "category": "{{createCategory.response.body._id}}",
+    "description": "This description is definitely going to be way too long because I am typing a lot of words to ensure that it exceeds the two hundred character limit that has been set in the validator configuration. I need to keep typing to make sure I really hit that limit effectively."
+}
+
+### 10. Create Product: Description too short (< 2)
+POST {{baseUrl}}/products
+Content-Type: application/json
+Authorization: Bearer {{adminLogin.response.body.token}}
+
+{
+    "name": "Valid Name",
+    "price": 100,
+    "category": "{{createCategory.response.body._id}}",
+    "description": "A"
+}
